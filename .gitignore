@@ -52,3 +52,237 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+
+import csv
+import datetime
+import math
+import string
+
+def main():
+    tweet_file = raw_input('Please enter tweet file name: ') # txt file
+    zips_file = raw_input('Please enter zipcode file name: ') # csv file
+    sentiment_file = raw_input('Please enter sentiments file name: ') # csv file
+    outfile = raw_input('Please enter out file name: ') # txt file
+
+    all_tweets = make_tweets(tweet_file)
+    all_zips = make_zip_list(zips_file)
+    all_sentiments = make_sentiments_list(sentiment_file)
+
+    new_dicts = add_geo(all_tweets, all_zips)
+    rewritten_tweets = add_sentiment(new_dicts, all_sentiments)
+    return rewritten_tweets
+
+
+def make_tweets(tweet_file):
+    """Returns a list of dictionaries"""
+    infile = open(tweet_file, 'r')
+    tweets = []
+    first_line = infile.readline()
+    for line in infile:
+        tweets.append(make_tweet(line))
+    return tweets
+
+def make_tweet(tweet_line):
+    """Return a tweet, represented as a python dictionary.
+    tweet_line: a string corresponding to a line formatted as in all_tweets.txt
+
+    Dictionary keys:
+    text  -- A string; the text of the tweet, all in lowercase
+    time  -- A datetime object; the time that the tweet was posted
+    lat   -- A number; the latitude of the tweet's location
+    lon   -- A number; the longitude of the tweet's location
+
+    """
+    "***YOUR CODE HERE***"
+
+    
+    # split the line
+    split = tweet_line.split("\t")
+    
+    # retrieve and split lat and long
+    split_lat_lon = split[0].split()
+    
+    # strip ends
+    lat = split_lat_lon[0].rstrip(',').lstrip('[')
+    lon = split_lat_lon[1].rstrip(']').lstrip(' ')
+
+    # retrieve and split date and time
+    date_time = split[2].split()
+
+    date = date_time[0].split('-')
+    year = date[0]
+    month = date[1]
+    day = date[2]
+
+    time = date_time[1].split(":")
+    hour = time[0]
+    minute = time[1]
+    second = time[2]
+
+    d = datetime.datetime(int(year),int(month),int(day),int(hour),int(minute),int(second))
+
+    tweet = {"text": split[3].lower().strip(), "time": d, "lat": float(lat), "lon": float(lon)}
+    return tweet
+
+def tweet_text(tweet):
+    """Return the text of a tweet as a string"""
+    return tweet["text"]
+
+def tweet_words(tweet):
+    """Return a list of the words in the text of a tweet not
+    including punctuation."""
+    "*** YOUR CODE HERE ***"
+    split = tweet_text(tweet).split()
+    tweet_word = []
+    for word in split:
+        for character in word:
+            for j in string.punctuation:
+                if character == j:
+                    word.strip(j)
+            tweet_word.append(word)
+    return tweet_word
+
+def tweet_time(tweet):
+    """Return the datetime that represents when the tweet was posted."""
+    "*** YOUR CODE HERE ***"
+    return tweet["time"]
+
+def tweet_location(tweet):
+    """Return an tuple that represents the tweet's location."""
+    "*** YOUR CODE HERE ***"
+    return (tweet["lat"], tweet["lon"])
+
+def make_zip_list(csv_file):
+    """Returns a list of dictionaries"""
+    all_zip_codes = open(csv_file, 'rU')
+    reader = csv.reader(all_zip_codes)
+    zip_list = []
+    line = reader.next()
+    for line in reader:
+        zip_list.append(make_zip(line))
+    return zip_list
+    
+def make_zip(zipcode):
+    """Return a zip code, represented as a python dictionary.
+    zipcode: a list containing a single zip codes data ordered as in zips.csv
+
+    Dictionary keys:
+    zip    -- A string; the sip code
+    state   -- A string; Two-letter postal code for state
+    lat    -- A number; latitude of zip code location
+    lon    -- A number; longitude of zip code location
+    city   -- A string; name of city assoicated with zip code
+
+    """
+    "***YOUR CODE HERE***"
+
+    return {"zip":str(zipcode[0]), "state":zipcode[1], "lat":float(zipcode[2].replace('"',"").strip()), "lon":float(zipcode[3].replace('"',"").strip()), "city":zipcode[4]}
+
+def find_zip(tweet, zip_list):
+    """return zipcode associated with a tweets location data
+    zip_list is a list of zip_codes represented as dictionaries"""
+    lat_lon = tweet_location(tweet)
+    distance = geo_distance(lat_lon, (zip_list[0]["lat"],zip_list[0]["lon"]))
+
+    for index in range(1, len(zip_list)):
+        if distance > geo_distance(lat_lon, (zip_list[index]["lat"], zip_list[index]["lon"])):
+            distance = geo_distance(lat_lon, (zip_list[index]["lat"], zip_list[index]["lon"]))
+            location = index
+    return zip_list[location]["zip"]
+    
+
+def find_state(tweet, zip_list):
+    """Returns the state of a tweet"""
+    lat_lon = tweet_location(tweet)
+    distance = geo_distance(lat_lon, (zip_list[0]['lat'],zip_list[0]['lat']))
+
+    for index in range(1, len(zip_list)):
+        if distance > geo_distance(lat_lon, (zip_list[index]['lat'],zip_list[index]['lat'])):
+            distance = geo_distance(lat_lon, (zip_list[index]['lat'],zip_list[index]['lat']))
+            location = index
+    return zip_list[location]["state"]
+
+def geo_distance(loc1,loc2):
+    """Return the great circle distance (in miles) between two
+    tuples of (latitude,longitude)
+
+    Uses the "haversine" formula.
+    http://en.wikipedia.org/wiki/Haversine_formula"""
+    p1 = math.radians(loc1[0])
+    p2 = math.radians(loc2[0])
+    l1 = math.radians(loc1[1])
+    l2 = math.radians(loc2[1])
+    r = 3959 # miles
+    d = 2*r*math.asin(math.sqrt((math.sin((p2-p1)/2))**2 + math.cos(p1)*math.cos(p2)*(math.sin((l2-l1)/2))**2))
+    return d
+
+def add_geo(tweets, zip_list):
+    """adds the new keys state and zip to each tweet dictionary in the list tweets"""
+    for tweet in tweets:
+        tweet['zip'] = find_zip(tweet, zip_list)
+        tweet['state'] = find_state(tweet, zip_list)
+    return tweets      
+
+def write_tweets(tweets,outfile):
+    """writes the list of tweets to a text file with name outfile"""
+    out_file = open(outfile, 'w')
+    for item in tweets:
+        out_file.write(str(item['lat']))
+        out_file.write('\t')
+        out_file.write(str(item['lon']))
+        out_file.write('\t')
+        out_file.write(str(item['time']))
+        out_file.write('\t')
+        out_file.write(str(item['text']))
+        out_file.write('\t')
+        out_file.write(str(item['state'].replace('"',"")))
+        out_file.write('\t')
+        out_file.write(str(item['zip']))
+        out_file.write('\t')
+        out_file.write(str(item['sentiment']))
+        out_file.write('\n')
+    out_file.close()
+    return out_file
+                        
+
+def make_sentiment(sentiment):
+    """Return a sentiment as a python dictionary
+    sentiment_file: a list containining a single
+    sentiment's data ordered as in zips.csv"""
+    return {"sentiment":str(sentiment[0]), "value":float(sentiment[1])}
+
+def make_sentiments_list(sentiment_file):
+    """Takes in a csv file of sentiments and
+    returns a list of dictionarys for each word"""
+    all_sentiments = open(sentiment_file, 'rU')
+    reader = csv.reader(all_sentiments)
+    sentiments_list = []
+    for line in reader:
+        sentiments_list.append(make_sentiment(line))
+    return sentiments_list
+
+def find_tweet_sentiment(tweet, sentiment_list):
+    """Returns the mean sentiment of the tweet"""
+    sentiment_total = 0
+    word_count = 0
+    tweet_word = tweet_words(tweet)
+    for word in tweet_word:
+        for sentiment in sentiment_list:
+            if word == sentiment['sentiment']:
+                sentiment_total += float(sentiment['value'])
+                word_count = word_count + 1
+    if word_count == 0:
+        return None
+    else: 
+        return sentiment_total/word_count
+        
+def add_sentiment(tweets, sentiment_list):
+    """Return an updated dictionary with the keyword sentiment
+    tweets: list of dictionaries
+    sentiments_list: a list of sentiment dictionaries"""
+    for tweet in tweets:
+        tweet['sentiment'] = find_tweet_sentiment(tweet, sentiment_list)
+    return tweets
+
+
+
