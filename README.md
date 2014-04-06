@@ -33,4 +33,19 @@ add_geo adds the keps zip and state to each dictionary in
 the list of dictionaries.
 write_tweets writes all of the dictionaries returned from
 add_geo to a new file.
+make_sentiments_list takes in a sentiment file (csv) as input
+and returns a list of dictionaries for each word
+make_sentiment takes in one line of the sentiment csv file and
+returns a dictionary with the keywords sentiment and value
+find_tweet_sentiment takes in a single tweet and the sentiment
+list of dictionaries and finds the average sentiment for each
+tweet
+add_sentiment takes in a tweet list of dictionaries and a
+sentiment list of dictionaries and returns an updated list
+of dictionaries with the sentiment key
+filter_by_word takes in a tweet list of dictionaries and **kwargs
+and filters the list according to the users commands
+filter_by_zip and filter_by_state do the same thing
+tweet_filter uses the previous three functions to filter by all
+of the user's commands
 
