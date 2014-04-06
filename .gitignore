@@ -54,38 +54,40 @@ docs/_build/
 
 
 def main():
-    tweet_file = raw_input('Please enter tweet file name (filename.txt): ')
-    zips_file = raw_input('Please enter zipcode file name (filename.csv): ')
-    sentiment_file = raw_input('Please enter sentiments file name (filename.csv): ')
-    outfile = raw_input('Please enter out file name: (filename.txt)')
 
-    all_tweets = make_tweets(tweet_file)
-    all_zips = make_zip_list(zips_file)
-    all_sentiments = make_sentiments_list(sentiment_file)
+    # ask user for input
+    all_tweets = make_tweets(raw_input('Please enter tweet file name (filename.txt): '))
+    all_zips = make_zip_list(raw_input('Please enter zipcode file name (filename.csv): '))
+    all_sentiments = make_sentiments_list(raw_input('Please enter sentiments file name (filename.csv): '))
+    outfile = raw_input('Please enter out file name (filename.txt):')
 
+    # add zip, state, and sentiment to tweet dictionaries
     new_dicts = add_geo(all_tweets, all_zips)
-    rewritten_tweets = add_sentiment(new_dicts, all_sentiments)
 
 
-
+    # ask the user about filtering
     state = raw_input("Do you want to filter by state? (y=1/n=0)")
     zipcode = raw_input("Do you want to filter by zipcode? (y=1/n=0)")
     word = raw_input("Do you want to filter by word? (y=1/n=0)")
 
-    
+    # if the user wants to filter, ask for more specifics
     if state == '1':
         st = raw_input("What state do you want to filter by? (abbrevation, please)")
-        rewritten_tweets = tweet_filter(rewritten_tweets, state=st)
+        new_dicts = tweet_filter(new_dicts, state=st)
     
     if zipcode == '1':
         zp = raw_input("What zipcode do you want to filter by?")
-        rewritten_tweets = tweet_filter(rewritten_tweets, zipcode=zp)
+        new_dicts = tweet_filter(new_dicts, zipcode=zp)
 
     if word == '1':
         wrd = raw_input("What word do you want to filter by?")
-        rewritten_tweets = tweet_filter(rewritten_tweets, word=wrd)
-        
+        new_dicts = tweet_filter(new_dicts, word=wrd)
 
+    
+
+    rewritten_tweets = add_sentiment(new_dicts, all_sentiments)
+        
+    # write dictionaries in txt file
     final_tweets = write_tweets(rewritten_tweets, outfile)
 
     return final_tweets
@@ -103,7 +105,9 @@ def make_sentiments_list(sentiment_file):
     all_sentiments = open(sentiment_file, 'rU')
     reader = csv.reader(all_sentiments)
     sentiments_list = []
+    # reads each line in csv file
     for line in reader:
+        # appends dictionaries to a list for each line in csv file
         sentiments_list.append(make_sentiment(line))
     return sentiments_list
 
@@ -130,6 +134,7 @@ def add_sentiment(tweets, sentiment_list):
     """Return an updated dictionary with the keyword sentiment
     tweets: list of dictionaries
     sentiments_list: a list of sentiment dictionaries"""
+    # add sentiment key to dictionary
     for tweet in tweets:
         tweet['sentiment'] = find_tweet_sentiment(tweet, sentiment_list)
     return tweets
@@ -138,6 +143,8 @@ def tweet_filter(tweets, **kwargs):
     """takes in tweets (a list of dictionaries) and keyword
     arguments. returns the filtered list"""
     filtered_list = []
+
+    # calls the filter functions depending on keyword arguments
     if kwargs is not None:
         if 'word' in kwargs:
             filtered_list = filter_by_word(tweets, **kwargs) 
@@ -156,8 +163,11 @@ def filter_by_word(tweets, **kwargs):
 
     for tweet in tweets:
         found = False
+        # returns a list of words in tweet with no punctuation
         word_list = tweet_words(tweet)
+        # iterate through list
         for single_word in word_list:
+            # boolean makes sure tweets arent written multiple times
             if single_word == kwargs['word'] and found == False:
                 filtered_list.append(tweet)
                 found = True
@@ -166,10 +176,10 @@ def filter_by_word(tweets, **kwargs):
 def filter_by_zip(tweets, **kwargs):
     """Returns list filtered by zip"""
     filtered_list = []
-    for tweet in tweets:
-        if kwargs['zipcode'] == tweet['zip']:
-            filtered_list.append(tweet)
-            found = yes
+    if len(tweets) != 0:
+        for tweet in tweets:
+            if kwargs['zipcode'] == tweet['zip']:
+                filtered_list.append(tweet)
     return filtered_list
 
 def filter_by_state(tweets, **kwargs):
@@ -366,3 +376,4 @@ def write_tweets(tweets,outfile):
                         
 
 main()
+
