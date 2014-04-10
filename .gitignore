@@ -86,13 +86,15 @@ def main():
     
 
     rewritten_tweets = add_sentiment(new_dicts, all_sentiments)
+    average = average_filtered_sent(new_dicts)
         
     # write dictionaries in txt file
     final_tweets = write_tweets(rewritten_tweets, outfile)
 
-    return final_tweets
-    
+    # print average of the tweets
+    print average
 
+    
 def make_sentiment(sentiment):
     """Return a sentiment as a python dictionary
     sentiment_file: a list containining a single
@@ -190,6 +192,16 @@ def filter_by_state(tweets, **kwargs):
             filtered_list.append(tweet)
     return filtered_list
 
+def average_filtered_sent(filtered_tweets):
+    """Returns the average sentiment of the filtered tweets"""
+    tweet_count = 0
+    total_sent = 0
+    for tweet in filtered_tweets:
+        if tweet['sentiment'] is not None:
+            total_sent = total_sent + float(tweet['sentiment'])
+        tweet_count = tweet_count + 1
+    return total_sent/tweet_count
+
 
 
 
@@ -223,7 +235,7 @@ def make_tweet(tweet_line):
     lon   -- A number; the longitude of the tweet's location
 
     """
-    "***YOUR CODE HERE***"
+  
 
     
     # split the line
@@ -261,7 +273,7 @@ def tweet_text(tweet):
 def tweet_words(tweet):
     """Return a list of the words in the text of a tweet not
     including punctuation."""
-    "*** YOUR CODE HERE ***"
+    
     split = tweet_text(tweet).split()
     tweet_word = []
     for word in split:
@@ -274,12 +286,12 @@ def tweet_words(tweet):
 
 def tweet_time(tweet):
     """Return the datetime that represents when the tweet was posted."""
-    "*** YOUR CODE HERE ***"
+    
     return tweet["time"]
 
 def tweet_location(tweet):
     """Return an tuple that represents the tweet's location."""
-    "*** YOUR CODE HERE ***"
+   
     return (tweet["lat"], tweet["lon"])
 
 def make_zip_list(csv_file):
@@ -304,7 +316,6 @@ def make_zip(zipcode):
     city   -- A string; name of city assoicated with zip code
 
     """
-    "***YOUR CODE HERE***"
 
     return {"zip":str(zipcode[0]), "state":zipcode[1], "lat":float(zipcode[2].replace('"',"").strip()), "lon":float(zipcode[3].replace('"',"").strip()), "city":zipcode[4]}
 
